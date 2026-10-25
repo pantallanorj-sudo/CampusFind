@@ -1,0 +1,4 @@
+Options -Indexes
+<FilesMatch "^(schema\.sql|seed\.sql|campusfind\.sqlite|README\.md)$">
+  Require all denied
+</FilesMatch>

@@ -1,0 +1,1 @@
+</main><footer class="footer"><p>CampusFind · Campus Lost and Found</p><small>For school project demonstration. Keep personal claim evidence private.</small></footer><script src="<?= e(url('assets/js/app.js')) ?>"></script></body></html>
