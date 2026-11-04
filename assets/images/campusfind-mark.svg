@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">CampusFind mark</title>
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="#FCBB58"/>
+  <path d="M29 12.5c-9.2 0-16.5 7.3-16.5 16.4 0 9.1 7.3 16.5 16.5 16.5 3.4 0 6.6-1 9.2-2.8l9.8 9.8a3.6 3.6 0 0 0 5.1-5.1l-9.8-9.8a16.2 16.2 0 0 0 2.2-8.6c0-9.1-7.4-16.4-16.5-16.4Zm0 6.2c5.7 0 10.3 4.6 10.3 10.2 0 5.7-4.6 10.3-10.3 10.3s-10.3-4.6-10.3-10.3c0-5.6 4.6-10.2 10.3-10.2Z" fill="#014D8A"/>
+  <path d="m24.1 29.6 3.4 3.4 7-7" fill="none" stroke="#014D8A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

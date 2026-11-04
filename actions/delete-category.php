@@ -1,8 +1,12 @@
 <?php
-// Action endpoint scaffold: implement as POST-only, verify_csrf(), check role/ownership,
-// validate all input, use PDO prepared statements and transactions, and write audit history.
-require_once __DIR__.'/../includes/auth.php';
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit('Method not allowed'); }
-require_login(); verify_csrf();
-http_response_code(501);
-exit('This action is scaffolded but not implemented yet: delete-category.php');
+require_once __DIR__ . '/../includes/auth.php';
+require_post();
+verify_csrf();
+$me = require_admin();
+$result = CategoryService::delete($me['id'], post_int('category_id'));
+if ($result['ok']) {
+    flash('success', 'Category deleted.');
+} else {
+    flash_many('error', $result['errors']);
+}
+redirect('admin/manage-categories.php');

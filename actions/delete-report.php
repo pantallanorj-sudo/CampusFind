@@ -1,8 +1,13 @@
 <?php
-// Action endpoint scaffold: implement as POST-only, verify_csrf(), check role/ownership,
-// validate all input, use PDO prepared statements and transactions, and write audit history.
-require_once __DIR__.'/../includes/auth.php';
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit('Method not allowed'); }
-require_login(); verify_csrf();
-http_response_code(501);
-exit('This action is scaffolded but not implemented yet: delete-report.php');
+require_once __DIR__ . '/../includes/auth.php';
+require_post();
+verify_csrf();
+$me = require_login();
+$back = safe_return_path(isset($_POST['return_to']) ? $_POST['return_to'] : '', 'student/my-reports.php');
+$result = ReportService::withdraw($me, post_int('report_id'));
+if ($result['ok']) {
+    flash('success', 'The report was deleted from the listings. A closed record is kept for the audit history.');
+} else {
+    flash_many('error', $result['errors']);
+}
+redirect($back);

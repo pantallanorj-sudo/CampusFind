@@ -1,1 +1,5 @@
-<?php require_once __DIR__.'/../includes/auth.php'; require_role(['staff','admin']); $pageTitle='Manage Claims'; require __DIR__.'/../includes/header.php'; echo '<h1>Manage Claims</h1><div class="empty"><strong>Starter page</strong><p>This screen is included in the CampusFind file structure. Its full action workflow still needs implementation and testing.</p><p>Related requirements: manage claims, role-based access, validation, and audit logging where applicable.</p></div>'; require __DIR__.'/../includes/footer.php'; ?>
+<?php
+require_once __DIR__ . '/../includes/auth.php';
+$me = require_staff();
+$queuePath = 'staff/manage-claims.php';
+require __DIR__ . '/../includes/views/claim-queue.php';

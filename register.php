@@ -1,4 +1,48 @@
-<?php require_once __DIR__.'/includes/auth.php'; if(current_user()) redirect(current_user()['role'].'/dashboard.php'); $errors=[];
-if($_SERVER['REQUEST_METHOD']==='POST'){ verify_csrf(); $name=trim((string)($_POST['full_name']??'')); $email=strtolower(trim((string)($_POST['email']??''))); $password=(string)($_POST['password']??''); if(mb_strlen($name)<2||mb_strlen($name)>100)$errors[]='Enter a name between 2 and 100 characters.'; if(!filter_var($email,FILTER_VALIDATE_EMAIL))$errors[]='Enter a valid email.'; if(strlen($password)<8)$errors[]='Password must be at least 8 characters.'; if(!$errors){try{$s=$pdo->prepare('INSERT INTO users(full_name,email,password_hash,role) VALUES(?,?,?,?)');$s->execute([$name,$email,password_hash($password,PASSWORD_DEFAULT),'student']);flash('success','Account created. You can now log in.');redirect('login.php');}catch(PDOException $e){$errors[]='That email may already be registered.';}} }
-$pageTitle='Create account'; require __DIR__.'/includes/header.php'; ?>
-<section class="form-wrap"><h1>Create your account</h1><p>Public registration creates a student account only.</p><?php foreach($errors as $error): ?><div class="alert error"><?= e($error) ?></div><?php endforeach; ?><form method="post" class="panel"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><label>Full name<input name="full_name" maxlength="100" required value="<?= e($_POST['full_name']??'') ?>"></label><label>Email address<input type="email" name="email" maxlength="190" required value="<?= e($_POST['email']??'') ?>"></label><label>Password (at least 8 characters)<input type="password" name="password" minlength="8" required></label><button class="btn primary" type="submit">Register</button></form><p>Already registered? <a href="<?= e(url('login.php')) ?>">Log in</a></p></section><?php require __DIR__.'/includes/footer.php'; ?>
+<?php
+require_once __DIR__ . '/includes/auth.php';
+$existing = current_user();
+if ($existing) {
+    redirect(home_path($existing['role']));
+}
+$errors = array();
+$name = '';
+$email = '';
+if (is_post()) {
+    verify_csrf();
+    $name = field($_POST, 'full_name');
+    $email = strtolower(field($_POST, 'email'));
+    $password = (isset($_POST['password']) && is_string($_POST['password'])) ? $_POST['password'] : '';
+    $confirm = (isset($_POST['password_confirm']) && is_string($_POST['password_confirm'])) ? $_POST['password_confirm'] : '';
+    $errors = validate_person_name($name);
+    if (!valid_email($email)) {
+        $errors[] = 'Enter a valid email address.';
+    }
+    $errors = array_merge($errors, validate_password($password, $confirm));
+    if (count($errors) === 0) {
+        // The role is fixed here on purpose: public registration can only ever create students.
+        $result = UserService::insert($name, $email, $password, 'student');
+        if ($result['ok']) {
+            flash('success', 'Account created. You can now log in.');
+            redirect('login.php');
+        }
+        $errors = $result['errors'];
+    }
+}
+$pageTitle = 'Create account';
+require __DIR__ . '/includes/header.php';
+?>
+<section class="form-wrap">
+  <h1>Create your account</h1>
+  <p>Public registration creates a student account only.</p>
+  <?php foreach ($errors as $error): ?><div class="alert error" role="alert"><?= e($error) ?></div><?php endforeach; ?>
+  <form method="post" action="<?= e(url('register.php')) ?>" class="panel">
+    <?= csrf_field() ?>
+    <label>Full name<input name="full_name" maxlength="100" required autocomplete="name" value="<?= e($name) ?>"></label>
+    <label>Email address<input type="email" name="email" maxlength="190" required autocomplete="username" value="<?= e($email) ?>"></label>
+    <label>Password (at least 8 characters)<input type="password" name="password" minlength="8" maxlength="72" required autocomplete="new-password"></label>
+    <label>Confirm password<input type="password" name="password_confirm" minlength="8" maxlength="72" required autocomplete="new-password"></label>
+    <button class="btn primary" type="submit">Register</button>
+  </form>
+  <p>Already registered? <a href="<?= e(url('login.php')) ?>">Log in</a></p>
+</section>
+<?php require __DIR__ . '/includes/footer.php'; ?>

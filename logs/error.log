@@ -1,0 +1,2 @@
+[04-Nov-2026 05:57:44 Asia/Manila] CampusFind DatabaseNotReadyException: The database file is missing or empty. @ database.php:30
+[04-Nov-2026 06:01:02 Asia/Manila] CampusFind DatabaseNotReadyException: The database file is missing or empty. @ database.php:30

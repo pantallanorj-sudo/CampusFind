@@ -1,8 +1,13 @@
 <?php
-// Action endpoint scaffold: implement as POST-only, verify_csrf(), check role/ownership,
-// validate all input, use PDO prepared statements and transactions, and write audit history.
-require_once __DIR__.'/../includes/auth.php';
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit('Method not allowed'); }
-require_login(); verify_csrf();
-http_response_code(501);
-exit('This action is scaffolded but not implemented yet: confirm-handover.php');
+require_once __DIR__ . '/../includes/auth.php';
+require_post();
+verify_csrf();
+$me = require_staff();
+$claimId = post_int('claim_id');
+$result = HandoverService::confirm($me, $claimId, post_int('recipient_id'), field($_POST, 'handed_over_at'), field($_POST, 'handover_notes'), !empty($_POST['identity_confirmed']));
+if ($result['ok']) {
+    flash('success', 'Handover confirmed. The claim and the item are now marked as returned.');
+    redirect('staff/handover.php');
+}
+flash_many('error', $result['errors']);
+redirect('staff/handover.php?claim_id=' . $claimId);

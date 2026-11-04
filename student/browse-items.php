@@ -1,1 +1,48 @@
-<?php require_once __DIR__.'/../config/database.php';require_once __DIR__.'/../includes/functions.php';$term=trim((string)($_GET['q']??''));$type=(string)($_GET['type']??'');$sql="SELECT r.*,c.name category,u.full_name reporter FROM item_reports r JOIN categories c ON c.id=r.category_id JOIN users u ON u.id=r.user_id WHERE r.status='open'";$params=[];if($term!==''){$sql.=' AND (r.item_name LIKE ? OR r.description LIKE ? OR r.location LIKE ?)';$like='%'.$term.'%';array_push($params,$like,$like,$like);}if(in_array($type,['lost','found'],true)){$sql.=' AND r.report_type=?';$params[]=$type;}$sql.=' ORDER BY r.created_at DESC';$s=$pdo->prepare($sql);$s->execute($params);$items=$s->fetchAll();$pageTitle='Browse items';require __DIR__.'/../includes/header.php';?><section class="section-heading"><div><p class="eyebrow">SEARCH LISTINGS</p><h1>Browse lost and found items</h1></div><?php if(current_user()&&current_user()['role']==='student'):?><a class="btn primary" href="<?=e(url('student/report-item.php'))?>">+ Report item</a><?php endif;?></section><form class="searchbar" method="get"><input name="q" placeholder="Search item, description, or location" value="<?=e($term)?>"><select name="type"><option value="">Lost and found</option><option value="lost" <?=$type==='lost'?'selected':''?>>Lost</option><option value="found" <?=$type==='found'?'selected':''?>>Found</option></select><button class="btn primary">Search</button></form><div class="cards"><?php if(!$items):?><div class="empty">No matching active items found.</div><?php else:foreach($items as $r):?><article class="item-card"><span class="pill <?=e($r['report_type'])?>"><?=e(ucfirst($r['report_type']))?></span><h3><?=e($r['item_name'])?></h3><p><?=e($r['category'])?> · <?=e($r['location'])?></p><p><?=e(mb_strimwidth($r['description'],0,120,'…'))?></p><small>Reported <?=e($r['created_at'])?></small><a class="text-link" href="<?=e(url('student/item-details.php?id='.(int)$r['id']))?>">Details →</a></article><?php endforeach;endif;?></div><?php require __DIR__.'/../includes/footer.php';?>
+<?php
+require_once __DIR__ . '/../includes/auth.php';
+$me = require_login();
+$filters = array(
+    'q' => get_str('q', 80),
+    'type' => get_enum('type', array('lost', 'found'), ''),
+    'category_id' => get_int('category_id'),
+    'status' => get_enum('status', array('open', 'claim_pending'), ''),
+    'location' => get_str('location', 80),
+    'date_from' => get_date('date_from'),
+    'date_to' => get_date('date_to'),
+    'sort' => get_enum('sort', array('newest', 'oldest', 'name', 'date'), 'newest'),
+);
+$page = max(1, get_int('page', 1));
+$result = ReportService::search(array_merge($filters, array('scope' => 'browse')), $page, SettingsService::perPage());
+$rows = $result['rows'];
+$pg = $result['pg'];
+$categories = CategoryService::options();
+$active = ($filters['q'] !== '' || $filters['type'] !== '' || $filters['category_id'] > 0 || $filters['status'] !== '' || $filters['location'] !== '' || $filters['date_from'] !== '' || $filters['date_to'] !== '');
+$queryParams = $filters;
+$queryParams['category_id'] = $filters['category_id'] > 0 ? $filters['category_id'] : '';
+$pageTitle = 'Browse items';
+require __DIR__ . '/../includes/header.php';
+?>
+<div class="page-head"><div><h1>Browse items</h1><p>Active lost and found reports. Open an item to see details or submit a claim.</p></div>
+  <a class="btn primary" href="<?= e(url('student/report-item.php')) ?>">Report an item</a></div>
+<form method="get" class="filters" action="<?= e(url('student/browse-items.php')) ?>">
+  <label class="grow">Keyword<input type="search" name="q" maxlength="80" value="<?= e($filters['q']) ?>" placeholder="Name, description, location…"></label>
+  <label>Type<select name="type"><?= select_options(array('lost' => 'Lost', 'found' => 'Found'), $filters['type'], 'Lost & found') ?></select></label>
+  <label>Category<select name="category_id"><?= select_options($categories, $filters['category_id'] > 0 ? $filters['category_id'] : '', 'All categories') ?></select></label>
+  <label>Status<select name="status"><?= select_options(array('open' => 'Open', 'claim_pending' => 'Claim pending'), $filters['status'], 'Any status') ?></select></label>
+  <label>Location<input name="location" maxlength="80" value="<?= e($filters['location']) ?>" placeholder="e.g. Library"></label>
+  <label>From<input type="date" name="date_from" value="<?= e($filters['date_from']) ?>"></label>
+  <label>To<input type="date" name="date_to" value="<?= e($filters['date_to']) ?>"></label>
+  <label>Sort<select name="sort"><?= select_options(array('newest' => 'Newest reported', 'oldest' => 'Oldest reported', 'date' => 'Date lost/found', 'name' => 'Name A–Z'), $filters['sort']) ?></select></label>
+  <button class="btn primary" type="submit">Search</button>
+  <?php if ($active): ?><a class="btn ghost" href="<?= e(url('student/browse-items.php')) ?>">Clear filters</a><?php endif; ?>
+</form>
+<p class="muted"><?= e(plural($pg['total'], 'item')) ?> found</p>
+<div class="cards">
+  <?php if (count($rows) === 0): ?>
+    <div class="empty">No items match your search. Try fewer filters, or <a href="<?= e(url('student/report-item.php')) ?>">report an item</a>.</div>
+  <?php else: ?>
+    <?php foreach ($rows as $r): ?><?= item_card_html($r) ?><?php endforeach; ?>
+  <?php endif; ?>
+</div>
+<?= pager_html($pg, 'student/browse-items.php', $queryParams) ?>
+<?php require __DIR__ . '/../includes/footer.php'; ?>

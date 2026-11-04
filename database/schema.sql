@@ -69,3 +69,33 @@ INSERT OR IGNORE INTO categories(name, description) VALUES
  ('Clothing','Jackets, uniforms and clothing'), ('Books / School Supplies','Books, notebooks and supplies'),
  ('Keys','Keys and keychains'), ('Other','Items that do not fit another category');
 INSERT OR IGNORE INTO system_settings(setting_key, setting_value) VALUES ('unclaimed_retention_days','30');
+
+-- ---------------------------------------------------------------------------
+-- Additive, idempotent extras (safe to re-run on an existing database).
+-- ---------------------------------------------------------------------------
+-- Extra indexes that back foreign keys and the most common list screens.
+CREATE INDEX IF NOT EXISTS idx_reports_user ON item_reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_reports_created ON item_reports(created_at);
+CREATE INDEX IF NOT EXISTS idx_claims_report ON claim_requests(item_report_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_claim ON claim_evidence(claim_id);
+CREATE INDEX IF NOT EXISTS idx_images_report ON item_images(item_report_id);
+CREATE INDEX IF NOT EXISTS idx_status_history_report ON status_history(item_report_id);
+CREATE INDEX IF NOT EXISTS idx_claim_history_claim ON claim_status_history(claim_id);
+
+-- A report can have at most one approved-or-returned claim (the "winner"). Protects against double approval / double handover.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_claims_one_winner ON claim_requests(item_report_id) WHERE status IN ('approved','returned');
+
+-- Audit trail tables are append-only: nobody (including application bugs) can edit or delete history rows.
+CREATE TRIGGER IF NOT EXISTS trg_status_history_no_update BEFORE UPDATE ON status_history
+BEGIN SELECT RAISE(ABORT, 'status_history is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS trg_status_history_no_delete BEFORE DELETE ON status_history
+BEGIN SELECT RAISE(ABORT, 'status_history is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS trg_claim_history_no_update BEFORE UPDATE ON claim_status_history
+BEGIN SELECT RAISE(ABORT, 'claim_status_history is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS trg_claim_history_no_delete BEFORE DELETE ON claim_status_history
+BEGIN SELECT RAISE(ABORT, 'claim_status_history is append-only'); END;
+
+-- Additional default settings (the app also falls back to these defaults if a row is missing).
+INSERT OR IGNORE INTO system_settings(setting_key, setting_value) VALUES ('app_name','CampusFind');
+INSERT OR IGNORE INTO system_settings(setting_key, setting_value) VALUES ('notify_staff_new_claims','1');
+INSERT OR IGNORE INTO system_settings(setting_key, setting_value) VALUES ('items_per_page','12');
